@@ -1,129 +1,94 @@
-import { redirect } from "next/navigation";
-import { Scissors, Clock, Zap } from "lucide-react";
+import Link from "next/link";
+import { Scissors, Clock, Zap, Film, Plus } from "lucide-react";
 import { getSession } from "@/lib/dummy-auth";
-import DashboardNav from "@/components/dashboard/DashboardNav";
-import QuickTrim from "@/components/dashboard/QuickTrim";
+import { getMockClips, getMockUsage } from "@/lib/mock-data";
+import StatsCard from "@/components/dashboard/StatsCard";
+import RecentClipsTable from "@/components/dashboard/RecentClipsTable";
+import QuickTrimWidget from "@/components/dashboard/QuickTrimWidget";
+import AIReelsBanner from "@/components/dashboard/AIReelsBanner";
 
-// ── Stat card ──────────────────────────────────────────────────
-function StatCard({
-  label,
-  value,
-  sub,
-  icon: Icon,
-  accent,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-  icon: React.ElementType;
-  accent?: boolean;
-}) {
-  return (
-    <div className="relative rounded-2xl border border-white/[0.07] bg-card p-5 overflow-hidden group hover:border-white/[0.12] transition-all duration-300">
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(ellipse_at_top_left,hsl(217_91%_60%/0.05),transparent_60%)]" />
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-xs font-medium text-muted-foreground/50 uppercase tracking-wider">
-          {label}
-        </span>
-        <div
-          className={`w-7 h-7 rounded-lg flex items-center justify-center ${accent ? "bg-primary/10 border border-primary/15" : "bg-white/[0.04] border border-white/[0.06]"}`}
-        >
-          <Icon className={`w-3.5 h-3.5 ${accent ? "text-primary" : "text-muted-foreground/50"}`} />
-        </div>
-      </div>
-      <p className={`text-3xl font-extrabold tabular-nums leading-none mb-1 ${accent ? "text-gradient-primary" : "text-foreground"}`}>
-        {value}
-      </p>
-      <p className="text-xs text-muted-foreground/45">{sub}</p>
-    </div>
-  );
+function greeting(name: string) {
+  const h = new Date().getHours();
+  const time = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+  return `${time}, ${name.split(" ")[0]}`;
 }
 
-// ── Empty clips state ──────────────────────────────────────────
-function RecentClips() {
-  return (
-    <div>
-      <h2 className="text-sm font-semibold text-muted-foreground/60 uppercase tracking-wider mb-3">
-        Recent Clips
-      </h2>
-      <div className="rounded-2xl border border-white/[0.07] bg-card">
-        {/* Table header */}
-        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 px-5 py-3 border-b border-white/[0.05]">
-          {["Source", "Duration", "Created", "Status"].map((h) => (
-            <span key={h} className="text-[11px] font-semibold text-muted-foreground/35 uppercase tracking-wider">
-              {h}
-            </span>
-          ))}
-        </div>
-
-        {/* Empty state */}
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.07] flex items-center justify-center">
-            <Scissors className="w-6 h-6 text-muted-foreground/25" />
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-medium text-foreground/50">No clips yet</p>
-            <p className="text-xs text-muted-foreground/35 mt-1">
-              Paste a video URL above to create your first clip.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Page ───────────────────────────────────────────────────────
 export default async function DashboardPage() {
   const session = await getSession();
-  if (!session) redirect("/");
+  const usage = getMockUsage();
+  const { clips } = getMockClips(5);
 
-  const firstName = session.name.split(" ")[0] ?? session.name;
+  const usagePct = (usage.minutesUsed / usage.minutesTotal) * 100;
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardNav session={session} />
-
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-        {/* Greeting */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Welcome back, {firstName}
-          </h1>
-          <p className="text-sm text-muted-foreground/60 mt-1">
-            Ready to trim? Paste a URL below or check your recent clips.
+    <div className="px-4 sm:px-6 py-8 max-w-6xl mx-auto space-y-8">
+      {/* Top bar */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground/50 mt-0.5">
+            {session ? greeting(session.name) : "Welcome back"}
           </p>
         </div>
+        <Link
+          href="/dashboard/trim"
+          className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 active:scale-95 text-white font-semibold text-sm transition-all shadow-[0_0_20px_-6px_hsl(217_91%_60%/0.5)]"
+        >
+          <Plus style={{ width: 15, height: 15 }} />
+          New Trim
+        </Link>
+      </div>
 
-        {/* Stats */}
-        <div className="grid sm:grid-cols-3 gap-4 mb-10">
-          <StatCard
-            label="Clips this month"
-            value="0"
-            sub="of 5 on free tier"
-            icon={Scissors}
-          />
-          <StatCard
-            label="Minutes processed"
-            value="0"
-            sub="of 10 min quota"
-            icon={Clock}
-          />
-          <StatCard
-            label="Credits"
-            value="10"
-            sub="free trial credits"
-            icon={Zap}
-            accent
-          />
-        </div>
+      {/* Stats row */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard
+          label="Clips this month"
+          value={String(usage.clipsThisMonth)}
+          sub={`${usage.clipsRemaining} remaining on ${usage.plan} plan`}
+          icon={Scissors}
+        />
+        <StatsCard
+          label="Minutes used"
+          value={`${usage.minutesUsed.toFixed(1)}`}
+          sub={`of ${usage.minutesTotal} min this month`}
+          icon={Clock}
+          progress={{ value: usage.minutesUsed, max: usage.minutesTotal }}
+        />
+        <StatsCard
+          label={usage.plan === "payg" ? "Credits balance" : usage.plan === "pro" ? "Overage this month" : "Free plan"}
+          value={
+            usage.plan === "payg"
+              ? `${usage.creditsBalance} min`
+              : usage.plan === "pro"
+                ? `$${(usage.overageAmount / 100).toFixed(2)}`
+                : "10 min"
+          }
+          sub={
+            usage.plan === "free"
+              ? "Upgrade for more quota"
+              : usage.plan === "payg"
+                ? "Pre-purchased credits"
+                : "Overage at $0.05/min"
+          }
+          icon={Zap}
+          accent
+        />
+        <StatsCard
+          label="Total clips ever"
+          value={String(usage.totalClipsEver)}
+          sub="Since you joined"
+          icon={Film}
+        />
+      </div>
 
-        {/* Quick trim */}
-        <QuickTrim />
+      {/* Quick trim */}
+      <QuickTrimWidget />
 
-        {/* Recent clips */}
-        <RecentClips />
-      </main>
+      {/* Recent clips */}
+      <RecentClipsTable clips={clips} />
+
+      {/* AI Reels banner */}
+      <AIReelsBanner />
     </div>
   );
 }
