@@ -2,16 +2,23 @@
   "name": "trrim-it",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
+    "build": "turbo build",
+    "dev": "dotenv -- turbo dev",
+    "lint": "turbo lint",
+    "format": "turbo format",
+    "typecheck": "turbo typecheck",
+    "db:generate": "turbo run db:generate",
+    "db:migrate": "dotenv -- turbo run db:migrate",
+    "db:push": "dotenv -- turbo run db:push",
+    "db:studio": "dotenv -- turbo run db:studio"
   },
   "devDependencies": {
-    "prettier": "^3.7.4",
-    "turbo": "^2.8.20",
-    "typescript": "5.9.2"
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "prettier": "^3.8.1",
+    "prettier-plugin-tailwindcss": "^0.7.2",
+    "turbo": "^2.8.17",
+    "typescript": "5.9.3"
   },
   "engines": {
     "node": ">=18"
@@ -20,5 +27,9 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "dependencies": {
+    "@types/node": "^25.5.2",
+    "dotenv": "^17.4.1"
+  }
 }

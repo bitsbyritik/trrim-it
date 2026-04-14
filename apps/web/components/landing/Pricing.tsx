@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Sparkles, Zap, CreditCard, Flame } from "lucide-react";
+import { Check, Sparkles, Zap, CreditCard } from "lucide-react";
 import { PRICING_TIERS, PRICING_META, CREDITS_EXPLAINER, type PricingTier } from "@/lib/copy";
 
 type Props = {
@@ -35,8 +35,8 @@ function Badge({ tier }: { tier: PricingTier }) {
 
   if (tier.id === "payg") {
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider bg-amber-500/15 border border-amber-500/25 text-amber-400 uppercase">
-        <Flame className="w-2.5 h-2.5" />
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider bg-cyan-500/15 border border-cyan-500/25 text-cyan-400 uppercase">
+        <Zap className="w-2.5 h-2.5" />
         {tier.badge}
       </span>
     );
@@ -77,7 +77,7 @@ function PriceDisplay({ tier, annual }: { tier: PricingTier; annual: boolean }) 
 
   const priceStyle =
     tier.id === "payg"
-      ? { backgroundImage: "linear-gradient(135deg, hsl(38 92% 60%), hsl(25 95% 58%))" }
+      ? { backgroundImage: "linear-gradient(135deg, hsl(188 90% 55%), hsl(217 91% 60%))" }
       : undefined;
 
   return (
@@ -124,14 +124,14 @@ function CtaButton({ tier, onSignIn }: { tier: PricingTier; onSignIn: () => void
     );
   }
 
-  // solid — Pro gets primary blue, PAYG gets amber
+  // solid — Pro gets primary blue, PAYG gets cyan→primary
   if (tier.id === "payg") {
     return (
       <button
         onClick={onSignIn}
-        className={`${base} relative overflow-hidden text-white shadow-[0_0_28px_-6px_hsl(38_92%_60%/0.45)]`}
+        className={`${base} relative overflow-hidden text-white shadow-[0_0_28px_-6px_hsl(188_90%_55%/0.4)]`}
         style={{
-          background: "linear-gradient(135deg, hsl(38 92% 52%), hsl(25 95% 50%))",
+          background: "linear-gradient(135deg, hsl(188 90% 42%), hsl(217 91% 52%))",
         }}
       >
         <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 bg-gradient-to-r from-transparent via-white/15 to-transparent skew-x-12" />
@@ -176,7 +176,7 @@ function PricingCard({
         isAiReels
           ? "bg-[#0a0a0a]/90 backdrop-blur-sm"
           : isPayg
-            ? "bg-[#0d0a06]/90 backdrop-blur-sm"
+            ? "bg-[#060d0d]/90 backdrop-blur-sm"
             : isPro
               ? "bg-card border border-primary/25 shadow-[0_0_60px_-15px_hsl(217_91%_60%/0.25)] hover:border-primary/40"
               : "bg-card border border-white/[0.07] hover:border-white/[0.12]"
@@ -187,12 +187,12 @@ function PricingCard({
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
       )}
       {isPayg && (
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/60 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
       )}
 
       {/* Ambient glow for PAYG */}
       {isPayg && (
-        <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-amber-500/[0.07] blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-cyan-500/[0.08] blur-3xl pointer-events-none" />
       )}
 
       {/*
@@ -208,7 +208,7 @@ function PricingCard({
               isAiReels
                 ? "text-foreground/70"
                 : isPayg
-                  ? "text-amber-200/80"
+                  ? "text-cyan-100/80"
                   : "text-foreground/90"
             }`}
           >
@@ -221,7 +221,7 @@ function PricingCard({
         <PriceDisplay tier={tier} annual={annual} />
         <p
           className={`text-xs mb-6 leading-relaxed ${
-            isPayg ? "text-amber-200/40" : "text-muted-foreground/55"
+            isPayg ? "text-cyan-200/40" : "text-muted-foreground/55"
           }`}
         >
           {tier.priceSub}
@@ -236,7 +236,7 @@ function PricingCard({
                 isAiReels
                   ? "text-foreground/50"
                   : isPayg
-                    ? "text-amber-100/60"
+                    ? "text-cyan-100/60"
                     : "text-foreground/70"
               }`}
             >
@@ -245,7 +245,7 @@ function PricingCard({
                   isAiReels
                     ? "text-accent/50"
                     : isPayg
-                      ? "text-amber-400/80"
+                      ? "text-cyan-400/80"
                       : isPro
                         ? "text-primary"
                         : "text-muted-foreground/60"
@@ -265,7 +265,7 @@ function PricingCard({
   // PAYG — amber gradient border
   if (isPayg) {
     return (
-      <div className="h-full p-px rounded-2xl bg-gradient-to-br from-amber-500/40 via-orange-500/20 to-yellow-500/25 shadow-[0_0_60px_-15px_hsl(38_92%_60%/0.25)]">
+      <div className="h-full p-px rounded-2xl bg-gradient-to-br from-cyan-500/35 via-primary/20 to-cyan-400/25 shadow-[0_0_60px_-15px_hsl(188_90%_55%/0.2)]">
         {cardInner}
       </div>
     );
