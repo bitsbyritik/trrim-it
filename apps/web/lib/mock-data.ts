@@ -6,6 +6,22 @@ export type Plan = "free" | "payg" | "pro";
 export type ClipStatus = "processing" | "ready" | "failed";
 export type BillingStatus = "paid" | "pending" | "failed";
 
+// Shared plan state shape — used by PlanProvider and mock-users
+export type PlanData = {
+  plan: Plan;
+  credits: number | null;       // PAYG only: minutes of credit
+  minutesUsed: number;
+  minutesTotal: number | null;  // null for PAYG (no monthly cap)
+  clipsThisMonth: number;
+  clipsRemaining: number | null; // null for PAYG/Pro (unlimited clips)
+  totalClipsEver: number;
+  overageAmount: number;        // Pro only: cents
+  overageMinutes: number;       // Pro only
+  monthlyCost: number;          // PAYG: cents spent this month
+  isLowCredits: boolean;        // PAYG: credits < 5 min
+  isNearLimit: boolean;         // Free/Pro: minutesUsed/total > 0.8
+};
+
 export type User = {
   id: string;
   name: string;

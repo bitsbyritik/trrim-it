@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 
 type Props = {
   used: number;
-  total: number;
+  total: number | null;
   unit: string;
 };
 
 export default function UsageMeter({ used, total, unit }: Props) {
   const [width, setWidth] = useState(0);
-  const pct = total > 0 ? Math.min((used / total) * 100, 100) : 0;
+  const pct = total != null && total > 0 ? Math.min((used / total) * 100, 100) : 0;
+
+  if (total == null) return null;
 
   useEffect(() => {
     // Defer by one tick so the CSS transition fires visibly on mount
@@ -25,7 +27,7 @@ export default function UsageMeter({ used, total, unit }: Props) {
     <div className="mt-4 space-y-1.5">
       <div className="flex justify-between text-[11px] text-muted-foreground/50 tabular-nums">
         <span>
-          {used} / {total} {unit} used
+          {used} / {total ?? "∞"} {unit} used
         </span>
         <span>{Math.round(pct)}%</span>
       </div>

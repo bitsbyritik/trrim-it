@@ -3,24 +3,27 @@
 import { useState } from "react";
 import { Menu } from "lucide-react";
 import Sidebar from "./Sidebar";
+import BuyCreditsModal from "./BuyCreditsModal";
+import { PlanProvider, usePlan } from "@/hooks/usePlan";
 import type { DummySession } from "@/lib/dummy-auth";
-import type { UsageData } from "@/lib/mock-data";
+import type { PlanData } from "@/lib/mock-data";
 
 type Props = {
   session: DummySession;
-  usage: Pick<UsageData, "minutesUsed" | "minutesTotal" | "plan">;
+  initialPlanData: PlanData;
   children: React.ReactNode;
 };
 
-export default function DashboardShell({ session, usage, children }: Props) {
+// Inner shell reads from PlanContext for the modal
+function ShellInner({ session, children }: { session: DummySession; children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { buyCreditsOpen, closeBuyCredits, credits } = usePlan();
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar
         session={session}
-        usage={usage}
         collapsed={collapsed}
         onCollapse={setCollapsed}
         mobileOpen={mobileOpen}
@@ -40,6 +43,20 @@ export default function DashboardShell({ session, usage, children }: Props) {
 
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
+
+      <BuyCreditsModal
+        open={buyCreditsOpen}
+        onClose={closeBuyCredits}
+        currentCredits={credits ?? 0}
+      />
     </div>
+  );
+}
+
+export default function DashboardShell({ session, initialPlanData, children }: Props) {
+  return (
+    <PlanProvider initialData={initialPlanData}>
+      <ShellInner session={session}>{children}</ShellInner>
+    </PlanProvider>
   );
 }

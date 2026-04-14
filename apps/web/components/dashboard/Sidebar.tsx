@@ -4,11 +4,12 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   Scissors, LayoutDashboard, Film, BarChart2,
-  Sparkles, Settings, ChevronLeft, ChevronRight, LogOut, X,
+  Sparkles, Settings, ChevronLeft, ChevronRight, LogOut, X, Zap,
 } from "lucide-react";
 import { dummySignOut, type DummySession } from "@/lib/dummy-auth";
 import UsageMeter from "@/components/ui/UsageMeter";
-import type { UsageData } from "@/lib/mock-data";
+import { usePlan } from "@/hooks/usePlan";
+import type { Plan } from "@/lib/mock-data";
 
 const NAV = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, exact: true },
@@ -26,7 +27,6 @@ const PLAN_BADGE: Record<string, string> = {
 
 type Props = {
   session: DummySession;
-  usage: Pick<UsageData, "minutesUsed" | "minutesTotal" | "plan">;
   collapsed: boolean;
   onCollapse: (v: boolean) => void;
   mobileOpen: boolean;
@@ -35,15 +35,15 @@ type Props = {
 
 // ── Shared inner content ───────────────────────────────────────
 function SidebarContent({
-  session, usage, collapsed, onCollapse, onNavClick,
+  session, collapsed, onCollapse, onNavClick,
 }: {
   session: DummySession;
-  usage: Props["usage"];
   collapsed: boolean;
   onCollapse?: (v: boolean) => void;
   onNavClick: () => void;
 }) {
   const pathname = usePathname();
+  const { plan, credits, minutesUsed, minutesTotal, isLowCredits, openBuyCredits, devSetPlan } = usePlan();
   const initials = session.name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
   const firstName = session.name.split(" ")[0] ?? session.name;
 
@@ -118,18 +118,63 @@ function SidebarContent({
         {!collapsed && (
           <div className="px-2.5 py-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] space-y-2">
             <div className="flex items-center justify-between">
-              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${PLAN_BADGE[usage.plan] ?? PLAN_BADGE.free}`}>
-                {usage.plan}
+              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${PLAN_BADGE[plan] ?? PLAN_BADGE.free}`}>
+                {plan}
               </span>
-              <Link
-                href="/dashboard/usage"
-                onClick={onNavClick}
-                className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors"
-              >
-                Upgrade
-              </Link>
+              {plan === "payg" ? (
+                <button
+                  onClick={openBuyCredits}
+                  className="text-[10px] text-cyan-400/70 hover:text-cyan-400 transition-colors"
+                >
+                  Buy Credits
+                </button>
+              ) : (
+                <Link
+                  href="/dashboard/settings#billing"
+                  onClick={onNavClick}
+                  className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors"
+                >
+                  {plan === "free" ? "Upgrade" : "Billing"}
+                </Link>
+              )}
             </div>
-            <UsageMeter used={usage.minutesUsed} total={usage.minutesTotal} unit="min" />
+
+            {/* Plan-specific balance display */}
+            {plan === "payg" ? (
+              <div className="flex items-center gap-1.5">
+                <Zap className={`w-3 h-3 shrink-0 ${isLowCredits ? "text-amber-400" : "text-cyan-400"}`} />
+                <span className={`text-xs font-semibold tabular-nums ${isLowCredits ? "text-amber-300" : "text-cyan-300"}`}>
+                  {(credits ?? 0).toFixed(1)} min
+                </span>
+                {isLowCredits && (
+                  <span className="text-[10px] text-amber-400/70 ml-auto">Low</span>
+                )}
+              </div>
+            ) : (
+              <UsageMeter used={minutesUsed} total={minutesTotal} unit="min" />
+            )}
+          </div>
+        )}
+
+        {/* Dev plan switcher (non-production only) */}
+        {!collapsed && devSetPlan && (
+          <div className="px-1">
+            <p className="text-[9px] text-muted-foreground/25 uppercase tracking-wider mb-1 px-1.5">Dev: switch plan</p>
+            <div className="flex gap-1">
+              {(["free", "payg", "pro"] as Plan[]).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => devSetPlan(p)}
+                  className={`flex-1 px-1.5 py-1 rounded text-[9px] font-bold uppercase tracking-wide transition-all border ${
+                    plan === p
+                      ? "border-primary/40 bg-primary/10 text-primary"
+                      : "border-white/[0.06] bg-white/[0.02] text-muted-foreground/35 hover:border-white/10 hover:text-muted-foreground/60"
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -172,14 +217,13 @@ function SidebarContent({
 }
 
 // ── Exported sidebar ───────────────────────────────────────────
-export default function Sidebar({ session, usage, collapsed, onCollapse, mobileOpen, onMobileClose }: Props) {
+export default function Sidebar({ session, collapsed, onCollapse, mobileOpen, onMobileClose }: Props) {
   return (
     <>
       {/* Desktop — always visible */}
       <div className="hidden lg:flex h-full shrink-0">
         <SidebarContent
           session={session}
-          usage={usage}
           collapsed={collapsed}
           onCollapse={onCollapse}
           onNavClick={() => {}}
@@ -211,7 +255,6 @@ export default function Sidebar({ session, usage, collapsed, onCollapse, mobileO
             {/* Reuse content with collapsed=false, no collapse button */}
             <SidebarContent
               session={session}
-              usage={usage}
               collapsed={false}
               onNavClick={onMobileClose}
             />

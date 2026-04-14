@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/dummy-auth";
-import { getMockUsage } from "@/lib/mock-data";
+import { MOCK_USER } from "@/lib/mock-data";
+import { getPlanData } from "@/lib/mock-users";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 
 export default async function DashboardLayout({
@@ -11,13 +12,10 @@ export default async function DashboardLayout({
   const session = await getSession();
   if (!session) redirect("/");
 
-  const usage = getMockUsage();
+  const initialPlanData = getPlanData(MOCK_USER.plan);
 
   return (
-    <DashboardShell
-      session={session}
-      usage={{ minutesUsed: usage.minutesUsed, minutesTotal: usage.minutesTotal, plan: usage.plan }}
-    >
+    <DashboardShell session={session} initialPlanData={initialPlanData}>
       {children}
     </DashboardShell>
   );

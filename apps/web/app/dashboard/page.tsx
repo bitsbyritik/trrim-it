@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Scissors, Clock, Zap, Film, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { getSession } from "@/lib/dummy-auth";
-import { getMockClips, getMockUsage } from "@/lib/mock-data";
-import StatsCard from "@/components/dashboard/StatsCard";
+import { getMockClips } from "@/lib/mock-data";
+import PlanStatsRow from "@/components/dashboard/PlanStatsRow";
+import LowBalanceBanner from "@/components/dashboard/LowBalanceBanner";
 import RecentClipsTable from "@/components/dashboard/RecentClipsTable";
 import QuickTrimWidget from "@/components/dashboard/QuickTrimWidget";
 import AIReelsBanner from "@/components/dashboard/AIReelsBanner";
@@ -15,10 +16,7 @@ function greeting(name: string) {
 
 export default async function DashboardPage() {
   const session = await getSession();
-  const usage = getMockUsage();
   const { clips } = getMockClips(5);
-
-  const usagePct = (usage.minutesUsed / usage.minutesTotal) * 100;
 
   return (
     <div className="px-4 sm:px-6 py-8 max-w-6xl mx-auto space-y-8">
@@ -39,46 +37,12 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      {/* Stats row */}
+      {/* Low balance / near-limit banner */}
+      <LowBalanceBanner />
+
+      {/* Stats row — plan-aware */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard
-          label="Clips this month"
-          value={String(usage.clipsThisMonth)}
-          sub={`${usage.clipsRemaining} remaining on ${usage.plan} plan`}
-          icon={Scissors}
-        />
-        <StatsCard
-          label="Minutes used"
-          value={`${usage.minutesUsed.toFixed(1)}`}
-          sub={`of ${usage.minutesTotal} min this month`}
-          icon={Clock}
-          progress={{ value: usage.minutesUsed, max: usage.minutesTotal }}
-        />
-        <StatsCard
-          label={usage.plan === "payg" ? "Credits balance" : usage.plan === "pro" ? "Overage this month" : "Free plan"}
-          value={
-            usage.plan === "payg"
-              ? `${usage.creditsBalance} min`
-              : usage.plan === "pro"
-                ? `$${(usage.overageAmount / 100).toFixed(2)}`
-                : "10 min"
-          }
-          sub={
-            usage.plan === "free"
-              ? "Upgrade for more quota"
-              : usage.plan === "payg"
-                ? "Pre-purchased credits"
-                : "Overage at $0.05/min"
-          }
-          icon={Zap}
-          accent
-        />
-        <StatsCard
-          label="Total clips ever"
-          value={String(usage.totalClipsEver)}
-          sub="Since you joined"
-          icon={Film}
-        />
+        <PlanStatsRow />
       </div>
 
       {/* Quick trim */}
