@@ -1,4 +1,4 @@
-CREATE TABLE "onrapay_account" (
+CREATE TABLE "trrim_account" (
 	"id" text PRIMARY KEY NOT NULL,
 	"account_id" text NOT NULL,
 	"provider_id" text NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE "onrapay_account" (
 	"updated_at" timestamp NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "onrapay_session" (
+CREATE TABLE "trrim_session" (
 	"id" text PRIMARY KEY NOT NULL,
 	"expires_at" timestamp NOT NULL,
 	"token" text NOT NULL,
@@ -23,10 +23,10 @@ CREATE TABLE "onrapay_session" (
 	"ip_address" text,
 	"user_agent" text,
 	"user_id" text NOT NULL,
-	CONSTRAINT "onrapay_session_token_unique" UNIQUE("token")
+	CONSTRAINT "trrim_session_token_unique" UNIQUE("token")
 );
 --> statement-breakpoint
-CREATE TABLE "onrapay_user" (
+CREATE TABLE "trrim_user" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"email" text NOT NULL,
@@ -34,10 +34,10 @@ CREATE TABLE "onrapay_user" (
 	"image" text,
 	"created_at" timestamp NOT NULL,
 	"updated_at" timestamp NOT NULL,
-	CONSTRAINT "onrapay_user_email_unique" UNIQUE("email")
+	CONSTRAINT "trrim_user_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
-CREATE TABLE "onrapay_verification" (
+CREATE TABLE "trrim_verification" (
 	"id" text PRIMARY KEY NOT NULL,
 	"identifier" text NOT NULL,
 	"value" text NOT NULL,
@@ -46,5 +46,5 @@ CREATE TABLE "onrapay_verification" (
 	"updated_at" timestamp
 );
 --> statement-breakpoint
-ALTER TABLE "onrapay_account" ADD CONSTRAINT "onrapay_account_user_id_onrapay_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."onrapay_user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "onrapay_session" ADD CONSTRAINT "onrapay_session_user_id_onrapay_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."onrapay_user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "trrim_account" ADD CONSTRAINT "trrim_account_user_id_trrim_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."trrim_user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "trrim_session" ADD CONSTRAINT "trrim_session_user_id_trrim_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."trrim_user"("id") ON DELETE cascade ON UPDATE no action;

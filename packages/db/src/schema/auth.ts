@@ -1,7 +1,7 @@
 import { uuid, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 import { pgTableCreator } from "drizzle-orm/pg-core";
 
-const createTable = pgTableCreator((name) => `onrapay_${name}`);
+const createTable = pgTableCreator((name) => `trrim_${name}`);
 
 export const user = createTable("user", {
   id: text("id").primaryKey(),

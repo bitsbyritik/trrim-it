@@ -1,11 +1,11 @@
 {
-  "id": "759734d8-8ad7-455c-a4ff-9513201ae8cb",
+  "id": "75659285-22a8-484c-b2ae-dea980f00dbc",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.onrapay_account": {
-      "name": "onrapay_account",
+    "public.trrim_account": {
+      "name": "trrim_account",
       "schema": "",
       "columns": {
         "id": {
@@ -89,10 +89,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "onrapay_account_user_id_onrapay_user_id_fk": {
-          "name": "onrapay_account_user_id_onrapay_user_id_fk",
-          "tableFrom": "onrapay_account",
-          "tableTo": "onrapay_user",
+        "trrim_account_user_id_trrim_user_id_fk": {
+          "name": "trrim_account_user_id_trrim_user_id_fk",
+          "tableFrom": "trrim_account",
+          "tableTo": "trrim_user",
           "columnsFrom": [
             "user_id"
           ],
@@ -109,8 +109,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.onrapay_session": {
-      "name": "onrapay_session",
+    "public.trrim_session": {
+      "name": "trrim_session",
       "schema": "",
       "columns": {
         "id": {
@@ -164,10 +164,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "onrapay_session_user_id_onrapay_user_id_fk": {
-          "name": "onrapay_session_user_id_onrapay_user_id_fk",
-          "tableFrom": "onrapay_session",
-          "tableTo": "onrapay_user",
+        "trrim_session_user_id_trrim_user_id_fk": {
+          "name": "trrim_session_user_id_trrim_user_id_fk",
+          "tableFrom": "trrim_session",
+          "tableTo": "trrim_user",
           "columnsFrom": [
             "user_id"
           ],
@@ -180,8 +180,8 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "onrapay_session_token_unique": {
-          "name": "onrapay_session_token_unique",
+        "trrim_session_token_unique": {
+          "name": "trrim_session_token_unique",
           "nullsNotDistinct": false,
           "columns": [
             "token"
@@ -192,8 +192,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.onrapay_user": {
-      "name": "onrapay_user",
+    "public.trrim_user": {
+      "name": "trrim_user",
       "schema": "",
       "columns": {
         "id": {
@@ -243,8 +243,8 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "onrapay_user_email_unique": {
-          "name": "onrapay_user_email_unique",
+        "trrim_user_email_unique": {
+          "name": "trrim_user_email_unique",
           "nullsNotDistinct": false,
           "columns": [
             "email"
@@ -255,8 +255,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.onrapay_verification": {
-      "name": "onrapay_verification",
+    "public.trrim_verification": {
+      "name": "trrim_verification",
       "schema": "",
       "columns": {
         "id": {
