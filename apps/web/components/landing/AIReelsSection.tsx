@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import { Sparkles, Smartphone, Type, ArrowRight, type LucideIcon } from "lucide-react";
 import { AI_REELS } from "@/lib/copy";
+import WaitlistModal from "@/components/WaitlistModal";
 
 const ICONS: LucideIcon[] = [Sparkles, Smartphone, Type];
 
@@ -11,6 +15,8 @@ const CAPTION_PREVIEW = [
 ];
 
 export default function AIReelsSection() {
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
     <section
       id="ai-reels"
@@ -126,8 +132,8 @@ export default function AIReelsSection() {
 
         {/* ── CTA ── */}
         <div className="flex flex-col items-center gap-2">
-          <a
-            href="#"
+          <button
+            onClick={() => setModalOpen(true)}
             className="group relative overflow-hidden inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl font-semibold text-sm text-white transition-all duration-150 active:scale-95"
             style={{
               background: "linear-gradient(135deg, hsl(263 70% 55%), hsl(217 91% 55%))",
@@ -137,12 +143,13 @@ export default function AIReelsSection() {
             <Sparkles className="w-4 h-4" />
             <span className="relative z-10">{AI_REELS.cta}</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-150" />
-            {/* Shimmer */}
             <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12" />
-          </a>
+          </button>
           <p className="text-xs text-muted-foreground/40">{AI_REELS.cta_sub}</p>
         </div>
       </div>
+
+      <WaitlistModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </section>
   );
 }

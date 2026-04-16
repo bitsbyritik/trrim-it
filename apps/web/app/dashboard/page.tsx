@@ -52,7 +52,7 @@ export default async function DashboardPage() {
       <RecentClipsTable clips={clips} />
 
       {/* AI Reels banner */}
-      <AIReelsBanner />
+      <AIReelsBanner defaultEmail={session?.email} />
     </div>
   );
 }
