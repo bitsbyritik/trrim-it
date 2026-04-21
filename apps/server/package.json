@@ -2,7 +2,7 @@
   "name": "server",
   "version": "0.1.0",
   "scripts": {
-    "dev": "cargo watch -q -c -x run",
+    "dev-server": "cargo watch -q -c -x run",
     "build": "cargo build --release",
     "test": "cargo test"
   }
