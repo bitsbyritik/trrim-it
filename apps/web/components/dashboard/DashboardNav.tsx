@@ -1,14 +1,13 @@
-import { Scissors, LayoutDashboard, Film, CreditCard, LogOut } from "lucide-react";
-import { dummySignOut, type DummySession } from "@/lib/dummy-auth";
+"use client";
 
-type Props = {
-  session: DummySession;
-};
+import { useRouter } from "next/navigation";
+import { Scissors, LayoutDashboard, Film, CreditCard, LogOut } from "lucide-react";
+import { useSession, signOut } from "@repo/auth/client";
 
 const NAV_LINKS = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, active: true },
-  { label: "Clips", href: "/dashboard/clips", icon: Film, active: false },
-  { label: "Billing", href: "/dashboard/billing", icon: CreditCard, active: false },
+  { label: "Dashboard", href: "/dashboard",         icon: LayoutDashboard, active: true },
+  { label: "Clips",     href: "/dashboard/clips",   icon: Film,            active: false },
+  { label: "Billing",   href: "/dashboard/billing", icon: CreditCard,      active: false },
 ];
 
 function Initials({ name }: { name: string }) {
@@ -24,11 +23,19 @@ function Initials({ name }: { name: string }) {
   );
 }
 
-export default function DashboardNav({ session }: Props) {
+export default function DashboardNav() {
+  const { data: session } = useSession();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/");
+    router.refresh();
+  };
+
   return (
     <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-background/80 backdrop-blur-xl">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-6">
-        {/* Logo */}
         <a href="/" className="flex items-center gap-2 shrink-0 mr-2">
           <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
             <Scissors className="w-3.5 h-3.5 text-primary" />
@@ -38,7 +45,6 @@ export default function DashboardNav({ session }: Props) {
           </span>
         </a>
 
-        {/* Nav links */}
         <nav className="flex items-center gap-1">
           {NAV_LINKS.map(({ label, href, icon: Icon, active }) => (
             <a
@@ -56,35 +62,28 @@ export default function DashboardNav({ session }: Props) {
           ))}
         </nav>
 
-        {/* Spacer */}
         <div className="flex-1" />
 
-        {/* User section */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2.5">
-            <Initials name={session.name} />
-            <div className="hidden sm:block">
-              <p className="text-xs font-semibold text-foreground/80 leading-none">
-                {session.name}
-              </p>
-              <p className="text-[11px] text-muted-foreground/50 leading-none mt-0.5">
-                {session.email}
-              </p>
+        {session && (
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
+              <Initials name={session.user.name} />
+              <div className="hidden sm:block">
+                <p className="text-xs font-semibold text-foreground/80 leading-none">{session.user.name}</p>
+                <p className="text-[11px] text-muted-foreground/50 leading-none mt-0.5">{session.user.email}</p>
+              </div>
             </div>
-          </div>
 
-          {/* Sign out */}
-          <form action={dummySignOut}>
             <button
-              type="submit"
+              onClick={handleSignOut}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground/50 hover:text-foreground/80 hover:bg-white/[0.05] transition-all"
               title="Sign out"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Sign out</span>
             </button>
-          </form>
-        </div>
+          </div>
+        )}
       </div>
     </header>
   );

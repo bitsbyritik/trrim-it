@@ -3,7 +3,7 @@ import { z } from "zod";
 import { eq, and } from "@repo/db";
 import { db } from "@repo/db";
 import { clip } from "@repo/db/schema";
-import { getSession } from "@/lib/dummy-auth";
+import { getServerSession } from "@/lib/auth-server";
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
@@ -16,7 +16,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 // ─── GET /api/clips/[id] — fetch a single clip ────────────────────────────────
 
 export async function GET(_req: NextRequest, { params }: RouteContext) {
-  const session = await getSession();
+  const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
   }
@@ -27,7 +27,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     const [found] = await db
       .select()
       .from(clip)
-      .where(and(eq(clip.id, id), eq(clip.userId, session.id)))
+      .where(and(eq(clip.id, id), eq(clip.userId, session.user.id)))
       .limit(1);
 
     if (!found) {
@@ -47,7 +47,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 // ─── PATCH /api/clips/[id] — update clip title ───────────────────────────────
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
-  const session = await getSession();
+  const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
   }
@@ -74,7 +74,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const [updated] = await db
       .update(clip)
       .set({ title: parsed.data.title })
-      .where(and(eq(clip.id, id), eq(clip.userId, session.id)))
+      .where(and(eq(clip.id, id), eq(clip.userId, session.user.id)))
       .returning();
 
     if (!updated) {
@@ -94,7 +94,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 // ─── DELETE /api/clips/[id] — remove a clip ──────────────────────────────────
 
 export async function DELETE(_req: NextRequest, { params }: RouteContext) {
-  const session = await getSession();
+  const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
   }
@@ -104,7 +104,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   try {
     const [deleted] = await db
       .delete(clip)
-      .where(and(eq(clip.id, id), eq(clip.userId, session.id)))
+      .where(and(eq(clip.id, id), eq(clip.userId, session.user.id)))
       .returning({ id: clip.id });
 
     if (!deleted) {

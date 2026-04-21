@@ -20,16 +20,10 @@ const OEMBED_PLATFORMS: Record<string, Platform> = {
 };
 
 const TRUSTED_SOCIAL_DOMAINS = [
-  // Twitter/X — oEmbed is unreliable; handled via syndication API separately
-  "twitter.com",
-  "x.com",
-  "t.co",
+  "twitter.com", "x.com", "t.co",
   "instagram.com",
-  "facebook.com",
-  "fb.watch",
-  "fb.com",
-  "twitch.tv",
-  "clips.twitch.tv",
+  "facebook.com", "fb.watch", "fb.com",
+  "twitch.tv", "clips.twitch.tv",
   "reddit.com",
   "streamable.com",
   "medal.tv",
@@ -44,50 +38,80 @@ function detectPlatform(url: string): Platform {
     for (const domain of TRUSTED_SOCIAL_DOMAINS) {
       if (hostname === domain || hostname.endsWith(`.${domain}`)) return "trusted_social";
     }
-  } catch { /* invalid URL — handled upstream */ }
+  } catch { /* invalid URL */ }
   return "direct";
 }
 
-// ─── YouTube — scrape lengthSeconds from watch page (no API key needed) ──────
+// ─── YouTube — parallel oEmbed + streamed watch page ─────────────────────────
 
-async function getYoutubeMeta(url: string): Promise<{ duration: number | null; title: string | null; exists: boolean }> {
+// YouTube's internal player API (WEB client) — returns videoDetails.lengthSeconds
+// without bot-detection pages. Uses the same public key the YouTube web app uses.
+async function getYoutubeDuration(videoId: string): Promise<number | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+
   try {
-    // Verify via oEmbed first (fast, confirms video is public)
-    const oembedRes = await fetch(
-      `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
-      { headers: { "User-Agent": "trrim.it/1.0" }, next: { revalidate: 300 } },
-    );
-    if (!oembedRes.ok) return { duration: null, title: null, exists: false };
-
-    const oembedJson = await oembedRes.json() as { title?: string };
-    const title = oembedJson.title ?? null;
-
-    // Fetch watch page to extract duration
-    const videoId = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
-    if (!videoId) return { duration: null, title, exists: true };
-
-    const watchRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
+    const res = await fetch(
+      "https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          videoId,
+          context: {
+            client: {
+              clientName: "WEB",
+              clientVersion: "2.20231201.01.00",
+              hl: "en",
+            },
+          },
+        }),
+        signal: controller.signal,
+        next: { revalidate: 300 },
       },
-    });
+    );
 
-    if (!watchRes.ok) return { duration: null, title, exists: true };
+    if (!res.ok) return null;
 
-    const html = await watchRes.text();
-    const match = html.match(/"lengthSeconds":"(\d+)"/);
-    const duration = match ? parseInt(match[1], 10) : null;
-
-    return { duration, title, exists: true };
+    const data = await res.json() as { videoDetails?: { lengthSeconds?: string } };
+    const raw = data?.videoDetails?.lengthSeconds;
+    return raw ? parseInt(raw, 10) : null;
   } catch {
-    return { duration: null, title: null, exists: false };
+    return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
-// ─── Twitter/X — syndication API (no auth needed for public tweets) ──────────
+async function getYoutubeMeta(url: string): Promise<{ duration: number | null; title: string | null; exists: boolean }> {
+  const videoId = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1] ?? null;
 
-/** Recursively walk any JSON value and return the first `duration_millis` found. */
+  const oembedController = new AbortController();
+  const oembedTimer = setTimeout(() => oembedController.abort(), 8000);
+
+  try {
+    // Fire both requests in parallel — oEmbed for title/existence, watch page for duration
+    const [oembedJson, duration] = await Promise.all([
+      fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`, {
+        headers: { "User-Agent": "trrim.it/1.0" },
+        signal: oembedController.signal,
+        next: { revalidate: 300 },
+      })
+        .then((r) => (r.ok ? (r.json() as Promise<{ title?: string }>) : null))
+        .catch(() => null),
+
+      videoId ? getYoutubeDuration(videoId) : Promise.resolve(null),
+    ]);
+
+    if (!oembedJson) return { duration: null, title: null, exists: false };
+    return { duration, title: oembedJson.title ?? null, exists: true };
+  } finally {
+    clearTimeout(oembedTimer);
+  }
+}
+
+// ─── Twitter/X — syndication API ─────────────────────────────────────────────
+
 function findDurationMillis(val: unknown): number | null {
   if (val === null || val === undefined) return null;
   if (Array.isArray(val)) {
@@ -116,30 +140,22 @@ async function getTwitterMeta(url: string): Promise<{ duration: number | null; e
     const res = await fetch(
       `https://cdn.syndication.twimg.com/tweet-result?id=${tweetId}&lang=en`,
       {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        },
+        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
         next: { revalidate: 300 },
       },
     );
 
-    if (!res.ok) {
-      console.warn(`[video-meta] Twitter syndication ${res.status} for tweet ${tweetId}`);
-      return { duration: null, exists: res.status !== 404 };
-    }
+    if (!res.ok) return { duration: null, exists: res.status !== 404 };
 
     const json: unknown = await res.json();
     const ms = findDurationMillis(json);
-    console.log(`[video-meta] Twitter tweet ${tweetId} — duration_millis:`, ms);
-
     return { duration: ms !== null ? Math.round(ms / 1000) : null, exists: true };
-  } catch (err) {
-    console.error("[video-meta] Twitter fetch error:", err);
+  } catch {
     return { duration: null, exists: true };
   }
 }
 
-// ─── Generic oEmbed helper ────────────────────────────────────────────────────
+// ─── Generic oEmbed ───────────────────────────────────────────────────────────
 
 async function fetchOembed(oembedUrl: string) {
   const res = await fetch(oembedUrl, {
@@ -197,7 +213,6 @@ export async function GET(req: NextRequest) {
       }
 
       case "trusted_social": {
-        // Twitter/X — try syndication API for duration
         const isTwitter = /(?:twitter\.com|x\.com|t\.co)/.test(raw);
         if (isTwitter) {
           const { duration, exists } = await getTwitterMeta(raw);
@@ -207,7 +222,6 @@ export async function GET(req: NextRequest) {
         return ok({ platform, duration: null, title: null });
       }
 
-      // Direct video files handled client-side via <video>
       case "direct":
         return ok({ platform: "direct", duration: null, title: null });
     }

@@ -1,18 +1,18 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Scissors, LayoutDashboard, Film, BarChart2,
   Sparkles, Settings, ChevronLeft, ChevronRight, LogOut, X, Zap,
 } from "lucide-react";
-import { dummySignOut, type DummySession } from "@/lib/dummy-auth";
+import { signOut } from "@repo/auth/client";
 import UsageMeter from "@/components/ui/UsageMeter";
 import { usePlan } from "@/hooks/usePlan";
-import type { Plan } from "@/lib/mock-data";
+import type { SessionUser } from "@/lib/auth-server";
 
 const NAV = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, exact: true },
+  { label: "Dashboard", href: "/dashboard",         icon: LayoutDashboard, exact: true },
   { label: "My Clips",  href: "/dashboard/clips",    icon: Film },
   { label: "Usage",     href: "/dashboard/usage",    icon: BarChart2 },
   { label: "AI Reels",  href: "/dashboard/ai-reels", icon: Sparkles, soon: true },
@@ -26,29 +26,36 @@ const PLAN_BADGE: Record<string, string> = {
 };
 
 type Props = {
-  session: DummySession;
+  session: SessionUser;
   collapsed: boolean;
   onCollapse: (v: boolean) => void;
   mobileOpen: boolean;
   onMobileClose: () => void;
 };
 
-// ── Shared inner content ───────────────────────────────────────
 function SidebarContent({
   session, collapsed, onCollapse, onNavClick,
 }: {
-  session: DummySession;
+  session: SessionUser;
   collapsed: boolean;
   onCollapse?: (v: boolean) => void;
   onNavClick: () => void;
 }) {
   const pathname = usePathname();
-  const { plan, credits, minutesUsed, minutesTotal, isLowCredits, openBuyCredits, devSetPlan } = usePlan();
+  const router = useRouter();
+  const { plan, credits, minutesUsed, minutesTotal, isLowCredits, openBuyCredits } = usePlan();
+
   const initials = session.name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
   const firstName = session.name.split(" ")[0] ?? session.name;
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname.startsWith(href);
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/");
+    router.refresh();
+  };
 
   return (
     <div
@@ -139,7 +146,6 @@ function SidebarContent({
               )}
             </div>
 
-            {/* Plan-specific balance display */}
             {plan === "payg" ? (
               <div className="flex items-center gap-1.5">
                 <Zap className={`w-3 h-3 shrink-0 ${isLowCredits ? "text-amber-400" : "text-cyan-400"}`} />
@@ -156,28 +162,6 @@ function SidebarContent({
           </div>
         )}
 
-        {/* Dev plan switcher (non-production only) */}
-        {!collapsed && devSetPlan && (
-          <div className="px-1">
-            <p className="text-[9px] text-muted-foreground/25 uppercase tracking-wider mb-1 px-1.5">Dev: switch plan</p>
-            <div className="flex gap-1">
-              {(["free", "payg", "pro"] as Plan[]).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => devSetPlan(p)}
-                  className={`flex-1 px-1.5 py-1 rounded text-[9px] font-bold uppercase tracking-wide transition-all border ${
-                    plan === p
-                      ? "border-primary/40 bg-primary/10 text-primary"
-                      : "border-white/[0.06] bg-white/[0.02] text-muted-foreground/35 hover:border-white/10 hover:text-muted-foreground/60"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className={`flex items-center gap-2 ${collapsed ? "justify-center flex-col" : "px-1"}`}>
           <div className="w-7 h-7 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center text-[11px] font-bold text-primary shrink-0">
             {initials}
@@ -188,15 +172,13 @@ function SidebarContent({
                 <p className="text-xs font-medium text-foreground/80 truncate leading-none">{firstName}</p>
                 <p className="text-[10px] text-muted-foreground/40 truncate mt-0.5">{session.email}</p>
               </div>
-              <form action={dummySignOut}>
-                <button
-                  type="submit"
-                  title="Sign out"
-                  className="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground/40 hover:text-foreground/60 hover:bg-white/[0.05] transition-all"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
-              </form>
+              <button
+                onClick={handleSignOut}
+                title="Sign out"
+                className="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground/40 hover:text-foreground/60 hover:bg-white/[0.05] transition-all"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
             </>
           )}
         </div>
@@ -216,11 +198,9 @@ function SidebarContent({
   );
 }
 
-// ── Exported sidebar ───────────────────────────────────────────
 export default function Sidebar({ session, collapsed, onCollapse, mobileOpen, onMobileClose }: Props) {
   return (
     <>
-      {/* Desktop — always visible */}
       <div className="hidden lg:flex h-full shrink-0">
         <SidebarContent
           session={session}
@@ -230,7 +210,6 @@ export default function Sidebar({ session, collapsed, onCollapse, mobileOpen, on
         />
       </div>
 
-      {/* Mobile — overlay */}
       <div className={`lg:hidden fixed inset-0 z-50 transition-all duration-200 ${mobileOpen ? "visible" : "invisible pointer-events-none"}`}>
         <div
           className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200 ${mobileOpen ? "opacity-100" : "opacity-0"}`}
@@ -238,7 +217,6 @@ export default function Sidebar({ session, collapsed, onCollapse, mobileOpen, on
         />
         <div className={`absolute top-0 left-0 h-full transition-transform duration-200 ease-out ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
           <div className="flex flex-col h-full bg-[#111111] border-r border-[#1f1f1f] w-[220px]">
-            {/* Mobile logo + close */}
             <div className="flex items-center justify-between h-14 px-4 border-b border-[#1f1f1f] shrink-0">
               <Link href="/dashboard" onClick={onMobileClose} className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
@@ -252,7 +230,6 @@ export default function Sidebar({ session, collapsed, onCollapse, mobileOpen, on
                 <X className="w-4 h-4" />
               </button>
             </div>
-            {/* Reuse content with collapsed=false, no collapse button */}
             <SidebarContent
               session={session}
               collapsed={false}

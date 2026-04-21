@@ -1,12 +1,13 @@
+"use client";
+
 import { Sparkles, Zap, LayoutGrid, Captions } from "lucide-react";
-import { getSession } from "@/lib/dummy-auth";
 import FeaturePreviewCard from "@/components/dashboard/FeaturePreviewCard";
 import WaitlistForm from "@/components/dashboard/WaitlistForm";
 
 const ROADMAP = [
-  { label: "Beta testing", date: "Q3 2026", done: false, current: false },
-  { label: "Creator plan early access", date: "Q4 2026", done: false, current: false },
-  { label: "General availability", date: "2027", done: false, current: false },
+  { label: "Beta testing",               date: "Q3 2026", done: false, current: false },
+  { label: "Creator plan early access",  date: "Q4 2026", done: false, current: false },
+  { label: "General availability",       date: "2027",    done: false, current: false },
 ];
 
 const FEATURES = [
@@ -30,9 +31,7 @@ const FEATURES = [
   },
 ];
 
-export default async function AIReelsPage() {
-  const session = await getSession();
-
+export default function AIReelsPage() {
   return (
     <div className="px-4 sm:px-6 py-8 max-w-5xl mx-auto space-y-12">
 
@@ -93,12 +92,8 @@ export default async function AIReelsPage() {
             <div key={milestone.label} className="flex sm:flex-1 items-start sm:items-center gap-3 sm:gap-0 sm:flex-col">
               <div className="flex sm:flex-row items-center sm:w-full">
                 <div className={`w-3 h-3 rounded-full border-2 shrink-0 z-10 ${milestone.current ? "border-primary bg-primary" : "border-[#2a2a2a] bg-background"}`} />
-                {i < ROADMAP.length - 1 && (
-                  <div className="hidden sm:block flex-1 h-px bg-[#1f1f1f]" />
-                )}
-                {i < ROADMAP.length - 1 && (
-                  <div className="sm:hidden w-px h-8 bg-[#1f1f1f] ml-1.5" />
-                )}
+                {i < ROADMAP.length - 1 && <div className="hidden sm:block flex-1 h-px bg-[#1f1f1f]" />}
+                {i < ROADMAP.length - 1 && <div className="sm:hidden w-px h-8 bg-[#1f1f1f] ml-1.5" />}
               </div>
               <div className="sm:text-center sm:pt-3 pb-4 sm:pb-0">
                 <p className="text-sm font-medium text-foreground/70">{milestone.label}</p>
@@ -109,7 +104,7 @@ export default async function AIReelsPage() {
         </div>
       </div>
 
-      {/* Waitlist form */}
+      {/* Waitlist form — WaitlistForm reads session email internally */}
       <div id="waitlist" className="rounded-2xl border border-accent/20 bg-[#111111] p-6 sm:p-8 max-w-lg mx-auto">
         <div className="text-center mb-6">
           <h2 className="text-lg font-bold text-foreground/90">Reserve your spot</h2>
@@ -117,7 +112,7 @@ export default async function AIReelsPage() {
             We&apos;ll notify you before public launch.
           </p>
         </div>
-        <WaitlistForm defaultEmail={session?.email} userId={session?.id} />
+        <WaitlistForm />
       </div>
     </div>
   );

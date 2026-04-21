@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Globe, Scissors, ArrowRight, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 function isValidUrl(value: string) {
@@ -42,11 +43,29 @@ function hmsToSeconds(hms: string): number {
   return parts[0] ?? 0;
 }
 
-export default function QuickTrimWidget() {
+const HH_MM_SS = /^\d{2}:\d{2}:\d{2}$/;
+
+type TrimSuccess = {
+  success: true;
+  clipId: string;
+  outputUrl: string;
+  durationSeconds: number;
+  processedAt: string;
+};
+type TrimResult = TrimSuccess | { success: false };
+
+type Props = {
+  onTrimStart?: (tempId: string, sourceUrl: string, title: string | null) => void;
+  onTrimComplete?: (tempId: string, result: TrimResult) => void;
+};
+
+export default function QuickTrimWidget({ onTrimStart, onTrimComplete }: Props) {
+  const router = useRouter();
   const [url, setUrl] = useState("");
   const [start, setStart] = useState("00:00:00");
   const [end, setEnd] = useState("00:00:00");
   const [fetching, setFetching] = useState(false);
+  const [videoTitle, setVideoTitle] = useState<string | null>(null);
   // null = no duration known (e.g. Instagram/TikTok), number = max seconds
   const [maxSeconds, setMaxSeconds] = useState<number | null>(null);
 
@@ -72,11 +91,15 @@ export default function QuickTrimWidget() {
     if (!urlValid) {
       setEnd("00:00:00");
       setMaxSeconds(null);
+      setVideoTitle(null);
       setFetching(false);
       return;
     }
 
     setFetching(true);
+    setEnd("00:00:00"); // reset while fetching so user sees it populate
+    setMaxSeconds(null);
+    setVideoTitle(null);
 
     debounceRef.current = setTimeout(async () => {
       const ac = new AbortController();
@@ -98,9 +121,13 @@ export default function QuickTrimWidget() {
             toast.error(json.error ?? "No video found at that URL.");
             setEnd("00:00:00");
             setMaxSeconds(null);
-          } else if (json.data.duration !== null) {
-            setMaxSeconds(json.data.duration);
-            setEnd(secondsToHms(json.data.duration));
+            setVideoTitle(null);
+          } else {
+            if (json.data.title) setVideoTitle(json.data.title);
+            if (json.data.duration !== null) {
+              setMaxSeconds(json.data.duration);
+              setEnd(secondsToHms(json.data.duration));
+            }
           }
           // duration null (Instagram, TikTok, etc.) — video confirmed, leave end editable
         } catch (err) {
@@ -164,6 +191,68 @@ export default function QuickTrimWidget() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
 
+  const handleTrim = () => {
+    if (!urlValid || fetching) return;
+
+    if (!HH_MM_SS.test(start) || !HH_MM_SS.test(end)) {
+      toast.error("Timestamps must be in HH:MM:SS format.");
+      return;
+    }
+    if (hmsToSeconds(end) <= hmsToSeconds(start)) {
+      toast.error("End time must be after start time.");
+      return;
+    }
+
+    // Capture before reset
+    const tempId = crypto.randomUUID();
+    const sourceUrl = url.trim();
+    const startTime = start;
+    const endTime = end;
+    const title = videoTitle;
+
+    // Notify parent + free the form immediately
+    onTrimStart?.(tempId, sourceUrl, title);
+    setUrl("");
+    setStart("00:00:00");
+    setEnd("00:00:00");
+    setMaxSeconds(null);
+    setVideoTitle(null);
+
+    // Fire-and-forget — result arrives via toast + onTrimComplete
+    void fetch("/api/trim", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: sourceUrl, start: startTime, end: endTime, title }),
+    })
+      .then(async (res) => {
+        const json = await res.json().catch(() => null) as {
+          data?: { clipId: string; outputUrl: string; durationSeconds: number; processedAt: string };
+          error?: string;
+        } | null;
+
+        if (!res.ok) {
+          toast.error(json?.error ?? "Trim failed.");
+          onTrimComplete?.(tempId, { success: false });
+        } else {
+          toast.success("Clip ready!", {
+            description: "Your clip has been trimmed.",
+            action: { label: "View Clips", onClick: () => router.push("/dashboard/clips") },
+          });
+          onTrimComplete?.(tempId, {
+            success: true,
+            clipId: json!.data!.clipId,
+            outputUrl: json!.data!.outputUrl,
+            durationSeconds: json!.data!.durationSeconds,
+            processedAt: json!.data!.processedAt,
+          });
+        }
+      })
+      .catch(() => {
+        toast.error("Network error. Please try again.");
+        onTrimComplete?.(tempId, { success: false });
+      });
+  };
+
   return (
     <div className="rounded-2xl border border-[#1f1f1f] bg-[#111111] p-5">
       <div className="flex items-center gap-2 mb-4">
@@ -215,6 +304,7 @@ export default function QuickTrimWidget() {
           />
         </div>
         <button
+          onClick={handleTrim}
           disabled={!urlValid || fetching}
           className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-sm transition-all active:scale-95 shadow-[0_0_20px_-6px_hsl(217_91%_60%/0.6)]"
         >

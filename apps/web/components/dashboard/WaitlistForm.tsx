@@ -2,19 +2,17 @@
 
 import { CheckCircle2 } from "lucide-react";
 import confetti from "canvas-confetti";
+import { useSession } from "@repo/auth/client";
 import { useWaitlist } from "@/hooks/useWaitlist";
 
-type Props = {
-  defaultEmail?: string;
-};
-
-export default function WaitlistForm({ defaultEmail = "" }: Props) {
+export default function WaitlistForm() {
+  const { data: session } = useSession();
   const {
     email, setEmail,
     notifyMe, setNotifyMe,
     foundingMember, setFoundingMember,
     loading, joined, submit,
-  } = useWaitlist({ source: "DASHBOARD", defaultEmail });
+  } = useWaitlist({ source: "DASHBOARD", defaultEmail: session?.user.email });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

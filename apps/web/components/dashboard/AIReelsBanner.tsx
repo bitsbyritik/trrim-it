@@ -3,15 +3,16 @@
 import { useState } from "react";
 import { Sparkles, ArrowRight, CheckCircle2, X } from "lucide-react";
 import confetti from "canvas-confetti";
+import { useSession } from "@repo/auth/client";
 import { useWaitlist } from "@/hooks/useWaitlist";
 
-type Props = {
-  defaultEmail?: string;
-};
-
-export default function AIReelsBanner({ defaultEmail }: Props) {
+export default function AIReelsBanner() {
+  const { data: session } = useSession();
   const [expanded, setExpanded] = useState(false);
-  const { email, setEmail, loading, joined, submit } = useWaitlist({ source: "DASHBOARD", defaultEmail });
+  const { email, setEmail, loading, joined, submit } = useWaitlist({
+    source: "DASHBOARD",
+    defaultEmail: session?.user.email,
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

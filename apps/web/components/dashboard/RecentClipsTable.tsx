@@ -68,7 +68,7 @@ export default function RecentClipsTable({ clips }: Props) {
             {clips.map((clip) => (
               <div
                 key={clip.id}
-                className="group grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_80px_120px_100px_80px] gap-3 items-center px-4 py-3.5 border-b border-[#1f1f1f] last:border-0 hover:bg-white/[0.02] transition-colors"
+                className={`group grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_80px_120px_100px_80px] gap-3 items-center px-4 py-3.5 border-b border-[#1f1f1f] last:border-0 transition-colors ${clip.status === "processing" ? "opacity-60" : "hover:bg-white/[0.02]"}`}
               >
                 <ThumbnailPlaceholder name={clip.name} />
 

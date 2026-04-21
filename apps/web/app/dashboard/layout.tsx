@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/dummy-auth";
-import { MOCK_USER } from "@/lib/mock-data";
-import { getPlanData } from "@/lib/mock-users";
+import { getServerSession } from "@/lib/auth-server";
+import { getUserPlanData } from "@/lib/plan-data";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 
 export default async function DashboardLayout({
@@ -9,13 +8,13 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
+  const session = await getServerSession();
   if (!session) redirect("/");
 
-  const initialPlanData = getPlanData(MOCK_USER.plan);
+  const planData = await getUserPlanData(session.user.id);
 
   return (
-    <DashboardShell session={session} initialPlanData={initialPlanData}>
+    <DashboardShell session={session.user} initialPlanData={planData}>
       {children}
     </DashboardShell>
   );

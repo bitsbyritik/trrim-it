@@ -5,17 +5,16 @@ import { Menu } from "lucide-react";
 import Sidebar from "./Sidebar";
 import BuyCreditsModal from "./BuyCreditsModal";
 import { PlanProvider, usePlan } from "@/hooks/usePlan";
-import type { DummySession } from "@/lib/dummy-auth";
+import type { SessionUser } from "@/lib/auth-server";
 import type { PlanData } from "@/lib/mock-data";
 
 type Props = {
-  session: DummySession;
+  session: SessionUser;
   initialPlanData: PlanData;
   children: React.ReactNode;
 };
 
-// Inner shell reads from PlanContext for the modal
-function ShellInner({ session, children }: { session: DummySession; children: React.ReactNode }) {
+function ShellInner({ session, children }: { session: SessionUser; children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { buyCreditsOpen, closeBuyCredits, credits } = usePlan();
@@ -31,7 +30,6 @@ function ShellInner({ session, children }: { session: DummySession; children: Re
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Mobile top bar */}
         <div className="lg:hidden flex items-center h-14 px-4 border-b border-[#1f1f1f] shrink-0 bg-[#111111]">
           <button
             onClick={() => setMobileOpen(true)}

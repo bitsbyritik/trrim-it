@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { eq, and, desc, count } from "@repo/db";
+import { eq, desc, count } from "@repo/db";
 import { db } from "@repo/db";
 import { clip } from "@repo/db/schema";
-import { getSession } from "@/lib/dummy-auth";
+import { getServerSession } from "@/lib/auth-server";
+
+const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN ?? "";
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
+// Called by the Rust server after a trim job reaches READY status.
 const createClipSchema = z.object({
+  userId: z.string().min(1, "userId is required."),
   jobId: z.string().min(1, "jobId is required."),
   durationSeconds: z.number().int().positive("durationSeconds must be a positive integer."),
-  outputUrl: z.string().min(1, "outputUrl is required.").url("outputUrl must be a valid URL."),
+  outputUrl: z.string().url("outputUrl must be a valid URL."),
   title: z.string().optional(),
   format: z.string().optional(),
 });
@@ -18,7 +22,7 @@ const createClipSchema = z.object({
 // ─── GET /api/clips — list clips for current user (paginated) ─────────────────
 
 export async function GET(req: NextRequest) {
-  const session = await getSession();
+  const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
   }
@@ -28,24 +32,24 @@ export async function GET(req: NextRequest) {
   const offset = Math.max(Number(searchParams.get("offset") ?? 0), 0);
 
   try {
-    const [clips, [{ value: total }]] = await Promise.all([
+    const [clips, totalRows] = await Promise.all([
       db
         .select()
         .from(clip)
-        .where(eq(clip.userId, session.id))
+        .where(eq(clip.userId, session.user.id))
         .orderBy(desc(clip.createdAt))
         .limit(limit)
         .offset(offset),
       db
         .select({ value: count() })
         .from(clip)
-        .where(eq(clip.userId, session.id)),
+        .where(eq(clip.userId, session.user.id)),
     ]);
 
     return NextResponse.json({
       data: {
         clips,
-        total,
+        total: totalRows[0]?.value ?? 0,
         page: Math.floor(offset / limit) + 1,
         pageSize: limit,
       },
@@ -60,11 +64,12 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// ─── POST /api/clips — create a clip record ───────────────────────────────────
+// ─── POST /api/clips — called by Rust server when a trim job reaches READY ────
+// Auth: INTERNAL_TOKEN (not user session — the Rust server has no cookie).
 
 export async function POST(req: NextRequest) {
-  const session = await getSession();
-  if (!session) {
+  const authHeader = req.headers.get("authorization");
+  if (!INTERNAL_TOKEN || authHeader !== `Bearer ${INTERNAL_TOKEN}`) {
     return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
   }
 
@@ -84,13 +89,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: null, error: message }, { status: 400 });
   }
 
-  const { jobId, durationSeconds, outputUrl, title, format } = parsed.data;
+  const { userId, jobId, durationSeconds, outputUrl, title, format } = parsed.data;
 
   try {
     const [created] = await db
       .insert(clip)
       .values({
-        userId: session.id,
+        userId,
         jobId,
         durationSeconds,
         outputUrl,
