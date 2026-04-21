@@ -29,6 +29,7 @@ export const db = drizzle(conn, { schema, casing: "snake_case" });
 export {
   eq,
   and,
+  desc,
   or,
   not,
   isNull,
@@ -39,4 +40,8 @@ export {
   notExists,
   sql,
   count,
+  gte,
+  lte,
+  gt,
+  lt,
 } from "drizzle-orm";
