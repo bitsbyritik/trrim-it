@@ -189,7 +189,10 @@ export default function DashboardPage() {
 
       <QuickTrimWidget onTrimStart={handleTrimStart} onTrimComplete={handleTrimComplete} />
 
-      <RecentClipsTable clips={clips} />
+      <RecentClipsTable
+        clips={clips}
+        onDelete={(id) => setClips((prev) => prev.filter((c) => c.id !== id))}
+      />
 
       <AIReelsBanner />
     </div>

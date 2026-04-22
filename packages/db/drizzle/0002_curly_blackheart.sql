@@ -1,0 +1,1 @@
+ALTER TABLE "trrim_monthly_usage" ADD COLUMN "seconds_processed" integer DEFAULT 0 NOT NULL;

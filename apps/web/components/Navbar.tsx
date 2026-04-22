@@ -107,7 +107,7 @@ export default function Navbar({ onSignIn }: Props) {
           <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={onSignIn}
-              className="relative overflow-hidden flex items-center gap-1.5 px-5 py-2 rounded-xl bg-primary hover:bg-primary/90 active:scale-95 text-white text-[13px] font-semibold transition-all duration-150 shadow-[0_0_22px_-4px_hsl(217_91%_60%/0.7)] group"
+              className="relative overflow-hidden flex items-center gap-1.5 px-5 py-2 rounded-xl bg-primary hover:bg-primary/90 active:scale-95 text-white text-[13px] font-semibold transition-all duration-150 shadow-[0_0_22px_-4px_hsl(217_91%_60%/0.7)] group cursor-pointer"
             >
               <span className="relative z-10 whitespace-nowrap">
                 Get Started

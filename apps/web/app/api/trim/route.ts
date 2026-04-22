@@ -4,6 +4,7 @@ import { eq, sql } from "@repo/db";
 import { db } from "@repo/db";
 import { trimJob, clip } from "@repo/db/schema";
 import { usageEvents, monthlyUsage } from "@repo/db/schema";
+import { subscriptions } from "@repo/db/schema";
 import { getServerSession } from "@/lib/auth-server";
 
 const trimSchema = z.object({
@@ -81,7 +82,16 @@ export async function POST(req: NextRequest) {
   }
 
   const clipId = crypto.randomUUID();
-  const billingPeriod = new Date().toISOString().slice(0, 7);
+
+  const sub = await db.query.subscriptions.findFirst({
+    where: eq(subscriptions.userId, session.user.id),
+    with: { plan: true },
+  });
+  const planType = sub?.plan?.type?.toLowerCase() ?? "free";
+  const billingPeriod =
+    planType === "pro" && sub?.currentPeriodStart
+      ? sub.currentPeriodStart.toISOString().slice(0, 10)
+      : new Date().toISOString().slice(0, 7);
 
   // 2. Mark PROCESSING
   await db
@@ -194,12 +204,14 @@ export async function POST(req: NextRequest) {
         clipsDownloaded: 1,
         videosFetched: 0,
         totalCreditsUsed: 1,
+        secondsProcessed: durationSeconds,
       })
       .onConflictDoUpdate({
         target: [monthlyUsage.userId, monthlyUsage.billingPeriod],
         set: {
           clipsDownloaded: sql`${monthlyUsage.clipsDownloaded} + 1`,
           totalCreditsUsed: sql`${monthlyUsage.totalCreditsUsed} + 1`,
+          secondsProcessed: sql`${monthlyUsage.secondsProcessed} + ${durationSeconds}`,
           updatedAt: new Date(),
         },
       }),

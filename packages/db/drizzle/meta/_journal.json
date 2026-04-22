@@ -15,6 +15,13 @@
       "when": 1776336946659,
       "tag": "0001_outgoing_the_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776794495116,
+      "tag": "0002_curly_blackheart",
+      "breakpoints": true
     }
   ]
 }

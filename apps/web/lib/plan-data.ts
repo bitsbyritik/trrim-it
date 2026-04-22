@@ -11,13 +11,22 @@ const PLAN_LIMITS: Record<Plan, { minutesTotal: number | null; clipsPerMonth: nu
 };
 
 export async function getUserPlanData(userId: string): Promise<PlanData> {
-  const billingPeriod = new Date().toISOString().slice(0, 7);
+  // Fetch subscription first — billing period depends on the plan cycle
+  const sub = await db.query.subscriptions.findFirst({
+    where: eq(subscriptions.userId, userId),
+    with: { plan: true },
+  });
 
-  const [sub, usageRow, latestCreditRows, totalClipsRows] = await Promise.all([
-    db.query.subscriptions.findFirst({
-      where: eq(subscriptions.userId, userId),
-      with: { plan: true },
-    }),
+  // No subscription row = FREE (schema design: implicit default)
+  const planType = (sub?.plan?.type?.toLowerCase() ?? "free") as Plan;
+
+  // Pro: reset on subscription renewal date; everyone else: calendar month
+  const billingPeriod =
+    planType === "pro" && sub?.currentPeriodStart
+      ? sub.currentPeriodStart.toISOString().slice(0, 10)
+      : new Date().toISOString().slice(0, 7);
+
+  const [usageRow, latestCreditRows, totalClipsRows] = await Promise.all([
     db.query.monthlyUsage.findFirst({
       where: and(
         eq(monthlyUsage.userId, userId),
@@ -32,12 +41,10 @@ export async function getUserPlanData(userId: string): Promise<PlanData> {
       .limit(1),
     db.select({ value: count() }).from(clip).where(eq(clip.userId, userId)),
   ]);
-
-  // No subscription row = FREE (schema design: implicit default)
-  const planType = (sub?.plan?.type?.toLowerCase() ?? "free") as Plan;
   const limits = PLAN_LIMITS[planType];
 
-  const minutesUsed = usageRow?.totalCreditsUsed ?? 0;
+  // Use immutable secondsProcessed — unaffected by clip deletion
+  const minutesUsed = Math.round((usageRow?.secondsProcessed ?? 0) / 6) / 10; // 1 decimal, e.g. 8.3
   const clipsThisMonth = usageRow?.clipsDownloaded ?? 0;
   const totalClipsEver = totalClipsRows[0]?.value ?? 0;
   const creditBalance = latestCreditRows[0]?.balanceAfter ?? 0;

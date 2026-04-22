@@ -40,6 +40,7 @@ export {
   notExists,
   sql,
   count,
+  sum,
   gte,
   lte,
   gt,

@@ -61,6 +61,7 @@ export const monthlyUsage = createTable(
     clipsDownloaded: integer("clips_downloaded").default(0).notNull(),
     videosFetched: integer("videos_fetched").default(0).notNull(),
     totalCreditsUsed: integer("total_credits_used").default(0).notNull(),
+    secondsProcessed: integer("seconds_processed").default(0).notNull(),
 
     createdAt: timestamp("created_at")
       .notNull()

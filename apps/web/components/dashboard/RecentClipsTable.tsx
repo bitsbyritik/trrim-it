@@ -1,10 +1,14 @@
+"use client";
+
 import Link from "next/link";
-import { Scissors, Download, Copy, Trash2, RotateCcw } from "lucide-react";
+import { Scissors, Download, Copy, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { ClipStatusBadge } from "@/components/ui/StatusBadge";
 import { formatDuration, formatDate, type Clip } from "@/lib/mock-data";
 
 type Props = {
   clips: Clip[];
+  onDelete?: (id: string) => void;
 };
 
 function EmptyState() {
@@ -33,7 +37,7 @@ function ThumbnailPlaceholder({ name }: { name: string }) {
   );
 }
 
-export default function RecentClipsTable({ clips }: Props) {
+export default function RecentClipsTable({ clips, onDelete }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -95,7 +99,7 @@ export default function RecentClipsTable({ clips }: Props) {
                 <div className="hidden sm:flex items-center gap-1 justify-end">
                   {clip.status === "ready" && (
                     <a
-                      href={clip.downloadUrl ?? "#"}
+                      href={`/api/clips/${clip.id}/download`}
                       title="Download"
                       className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground/40 hover:text-foreground/70 hover:bg-white/[0.06] transition-all"
                     >
@@ -105,21 +109,27 @@ export default function RecentClipsTable({ clips }: Props) {
                   {clip.status === "ready" && (
                     <button
                       title="Copy link"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(clip.downloadUrl ?? "");
+                        toast.success("Link copied to clipboard.");
+                      }}
                       className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground/40 hover:text-foreground/70 hover:bg-white/[0.06] transition-all"
                     >
                       <Copy className="w-3.5 h-3.5" />
                     </button>
                   )}
-                  {clip.status === "failed" && (
-                    <button
-                      title="Retry"
-                      className="w-7 h-7 flex items-center justify-center rounded-md text-amber-400/60 hover:text-amber-400 hover:bg-amber-500/[0.08] transition-all"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                    </button>
-                  )}
                   <button
                     title="Delete"
+                    onClick={async () => {
+                      if (!confirm("Delete this clip?")) return;
+                      const res = await fetch(`/api/clips/${clip.id}`, { method: "DELETE" });
+                      if (res.ok) {
+                        onDelete?.(clip.id);
+                        toast.success("Clip deleted.");
+                      } else {
+                        toast.error("Failed to delete clip.");
+                      }
+                    }}
                     className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground/40 hover:text-red-400 hover:bg-red-500/[0.08] transition-all"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
